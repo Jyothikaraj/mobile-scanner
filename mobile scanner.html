@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #my-qr-reader {
+            width: 90vw; /* Use 90% of the viewport width for mobile */
+            max-width: 500px; /* Ensure compatibility for larger screens */
+            margin: auto;
+        }
+        #you-qr-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: green;
+        }
+        h1 {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="you-qr-result"></div>
+    <h1>Scan QR Code</h1>
+        <div id="my-qr-reader"></div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+
+         // Function to send the QR token to Google Apps Script to update status
+         async function updateStatus(qrToken) {
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbw5lSXNFIRtEPY7rw3SWKugthKXFbw_f_rEpGmY4CNuTlbkc9MlELEfTtUJVSU5F1Wj/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: JSON.stringify({ qrToken })
+                });
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error("Error updating status:", error);
+                alert("Failed to update status");
+            }
+        }
+
+        // Callback when QR code is successfully scanned
+        function onScanSuccess(decodedText, decodedResult) {
+            document.getElementById("you-qr-result").innerHTML = `Scanned Result: ${decodedText}`;
+            console.log(`Scan successful: ${decodedText}`, decodedResult);
+           // Send the scanned QR token to the updateStatus function
+           updateStatus(decodedText);
+           
+            // Stop scanning once successful
+            html5QrCode.stop().catch(err => console.error("Error stopping the scanner", err));
+        }
+
+        // Initialize the QR scanner with camera configuration
+        const html5QrCode = new Html5Qrcode("my-qr-reader");
+
+        Html5Qrcode.getCameras().then(cameras => {
+            if (cameras.length > 0) {
+                // Use the first camera available
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Camera configuration
+                    { fps: 10, qrbox: 250 },
+                    onScanSuccess
+                ).catch(err => console.error("Error starting scanner", err));
+            } else {
+                alert("No cameras found.");
+            }
+        }).catch(err => console.error("Error getting cameras", err));
+    </script>
+</body>
+</html>
